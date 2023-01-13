@@ -1,0 +1,178 @@
+import time
+import random
+from graphviz import Digraph
+import matplotlib.pyplot as plt
+class Node:
+    def __init__(self, key=None, next=None):
+        self.key = key
+        self.next = next
+
+class LinkHeap:
+    head = Node()
+    tail = head
+    length=0
+    def init(self):
+        head = Node()
+        tail = head
+        length = 0
+    #Q1. index i   left_child= (i+1)*2-1  right_child=(i+1)*2
+    def get_left_child(self, i):
+        left_idx = (i+1)*2 - 1
+        p = self.head.next
+        k = 0
+        while k < left_idx and p:
+            p = p.next
+            k += 1
+        return p, left_idx
+
+    def get_right_child(self, i):
+        right_idx = (i+1)*2
+        p = self.head.next
+        k = 0
+        while k < right_idx and p:
+            p = p.next
+            k += 1
+        return p, right_idx
+
+    def get_parent(self, i):
+        parent_idx = (i+1)//2-1
+        if parent_idx<0:
+            return None, None
+        p = self.head.next
+        k = 0
+        while k < parent_idx and p:
+            p = p.next
+            k += 1
+        return p, parent_idx
+
+    #Q2.
+    def insert(self, value):
+        self.tail.next = Node(value)
+        self.tail = self.tail.next
+        current_idx = self.length
+        parent, parent_id = self.get_parent(current_idx)
+        p = self.tail
+        while parent and parent.key >value:
+            p.key = parent.key
+            p = parent
+            parent, parent_id = self.get_parent(parent_id)
+        p.key = value
+        self.length += 1
+
+    def delMin(self):
+        if self.head==self.tail:
+            return None
+        elif not self.head.next.next:
+            res = self.head.next.key
+            self.head.next = None
+            self.tail = self.head
+            self.length = 0
+            return res
+        else:
+            res = self.head.next.key
+            current_value = self.tail.key
+            self.head.next.key = self.tail.key
+            p = self.head
+            while p.next != self.tail:
+                p = p.next
+            self.tail = p
+            p.next = None
+            q = self.head.next
+            left, left_id = self.get_left_child(0)
+            right, right_id = self.get_right_child(0)
+            min_child = left if not right or left.key<=right.key  else right
+            min_id = left_id if not right or left.key<right.key  else right_id
+            while min_child and min_child.key < current_value:
+                q.key = min_child.key
+                q = min_child
+                left, left_id = self.get_left_child(min_id)
+                right, right_id = self.get_right_child(min_id)
+                if not left and not right:
+                    min_child, min_id = None, None
+                else:
+                    min_child = left if not right or left.key <= right.key  else right
+                    min_id = left_id if not right or left.key <= right.key else right_id
+            if q:
+                q.key = current_value
+            self.length -= 1
+            return res
+
+    def printHeap(self):
+        print('heap')
+        p = self.head.next
+        ls = []
+        while p:
+            ls.append(p.key)
+            p=p.next
+        print(ls)
+
+    #Q3. time complexity
+    # get_left_child    O(n)
+    # get_right_child   O(n)
+    # get_parent        O(n)
+    # insert            O(nlogn)
+    # delMin            O(nlogn)
+
+    #Q4. 
+    def test_heap(self):
+        insert_xs = []
+        insert_times=[]
+        del_xs = []
+        del_times = []
+        for count in [10, 100, 1000, 10000, 100000]:
+            start = time.time()
+            self.init()
+            for i in range(count):
+                num = count-i
+                #print(num)
+                heap.insert(num)
+            insert_xs.append(count)
+            insert_times.append(time.time()-start)
+            start = time.time()
+            for i in range(count):
+                self.delMin()
+            del_xs.append(count)
+            del_times.append(time.time()-start)
+
+        plt.figure()
+        plt.plot(insert_xs, insert_times, linewidth=5, zorder=1, label='insert')
+        plt.plot(del_xs, del_times, linewidth=5, zorder=2, label=r'delMin')
+        plt.xlabel('heap node num')
+        plt.ylabel('time seconds')
+        plt.legend()
+        plt.show()
+    
+    #Q5. 
+    def graphView(self):
+        g = Digraph('G', filename='hello.gv')
+        p = self.head.next
+        idx = 0
+        while p:
+            left, left_id = self.get_left_child(idx)
+            right, right_id = self.get_right_child(idx)
+            if left:
+                g.edge(str(p.key), str(left.key))
+            if right:
+                g.edge(str(p.key), str(right.key))
+            p = p.next
+            idx += 1
+        g.view()
+
+
+
+
+# insert 10000 2.155479669570923
+# del 10000 16.676916360855103
+
+
+
+
+if __name__ == '__main__':
+    #test_heap()
+    heap = LinkHeap()
+    for i in range(50,0, -1):
+        heap.insert(i)
+    heap.graphView()
+
+    heap = LinkHeap()
+    heap.test_heap()
